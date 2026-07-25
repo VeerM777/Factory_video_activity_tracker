@@ -103,7 +103,7 @@ def blur_faces(input_path: Path, output_path: Path, blur_ksize: int = 65) -> Pat
                         pass
 
                 # 3. Haar Cascade Fallback (if available)
-                if not face_boxes and not cascade.empty():
+                if not face_boxes and cascade is not None and not cascade.empty():
                     try:
                         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                         haar_faces = cascade.detectMultiScale(gray, scaleFactor=1.2, minNeighbors=3, minSize=(30, 30))
