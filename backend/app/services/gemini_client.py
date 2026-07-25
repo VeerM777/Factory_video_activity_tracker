@@ -73,26 +73,29 @@ _SEGMENTATION_PROMPT = """You are assisting an industrial time-and-motion study.
 
 CRITICAL MICRO-MOTION SEGMENTATION RULE:
 1. Segment ALL physical movements and actions occurring in the video, whether performed by a human operator, a robotic arm, a tool, or automated equipment.
-2. Do NOT combine multiple micro-actions (e.g. reaching, grasping, lifting, moving, positioning, pressing, releasing, robotic actuation). Every single distinct action lasting ~0.5 seconds to 2.0 seconds MUST be its own separate segment.
-3. You MUST produce a chronological list of micro-activity segments covering the entire duration of the video. Never return an empty list.
+2. Do NOT combine multiple micro-actions (e.g. reaching, grasping, lowering, positioning, pressing, releasing, retracting, returning). Every single micro-motion MUST last strictly between 1.0 second and 2.0 seconds maximum. NEVER output segments longer than 2.0 seconds.
+3. For a 15-second video, you MUST produce roughly 8 to 10 distinct micro-activity segments (e.g. ~1.5s to 2.0s per segment).
 4. Align segment start and end timestamps strictly with physical activity transitions.
 
 RICH NATURAL HUMAN LANGUAGE DESCRIPTION RULE:
 Every 'description' MUST be a detailed, rich natural human language sentence describing:
-- The actor ("An operator", "A robotic arm", "The automated press mechanism")
-- The specific movement ("reaching with end-effector", "grasping component", "lifting and moving", "positioning into press fixture", "actuating press cycle", "releasing and setting aside")
+- The actor ("An operator", "Robotic arms", "The automated press mechanism")
+- The specific movement ("reaching with pneumatic grippers", "grasping component", "lowering and positioning", "pressing and securing", "releasing and retracting", "returning to standby")
 - The specific object or tool involved ("the workpiece", "the battery module frame", "the press fixture", "the pneumatic gripper")
-- The workstation location context ("from the intake conveyor", "onto the assembly plate")
+- The workstation location context ("from the intake conveyor", "into the battery pack housing")
 
-EXAMPLES OF RICH MICRO-MOTION DESCRIPTIONS:
-  "A robotic arm reaching toward the battery module tray on the conveyor" (human_movement_state: MOVE, machine_state: IDLE)
-  "A robotic arm grasping the battery module frame with pneumatic grippers" (human_movement_state: GRASP, machine_state: IDLE)
-  "A robotic arm lifting and transferring the battery module toward the assembly station" (human_movement_state: MOVE, machine_state: IDLE)
-  "An automated press actuating downward onto the battery module fixture" (human_movement_state: HOLD, machine_state: ACTUATING)
-  "A robotic arm releasing the assembled module and returning to home position" (human_movement_state: RELEASE, machine_state: IDLE)
+EXAMPLES OF RICH MICRO-MOTION DESCRIPTIONS (8-segment micro-breakdown for a 15s clip):
+  "Robotic arms positioning battery modules over the automated guided vehicle" (t_start_sec: 0.0, t_end_sec: 1.5)
+  "Robotic arms lowering battery modules down toward the battery pack housing" (t_start_sec: 1.5, t_end_sec: 3.5)
+  "Robotic arms placing battery modules firmly into the compartments of the tray" (t_start_sec: 3.5, t_end_sec: 5.5)
+  "Robotic arms releasing battery modules inside the tray and beginning to retract" (t_start_sec: 5.5, t_end_sec: 7.5)
+  "Robotic arms raising away from the installed battery modules in the tray" (t_start_sec: 7.5, t_end_sec: 9.5)
+  "Robotic arms shifting sideways and hovering over the adjacent component bin" (t_start_sec: 9.5, t_end_sec: 11.5)
+  "Robotic arms lowering down to secure additional components onto the battery tray" (t_start_sec: 11.5, t_end_sec: 13.5)
+  "Robotic arms lifting up and returning to their default standby positions above table" (t_start_sec: 13.5, t_end_sec: 15.0)
 
 For each micro-activity segment, output:
-  - t_start_sec, t_end_sec: exact micro-boundary timestamps in seconds
+  - t_start_sec, t_end_sec: exact micro-boundary timestamps in seconds (max 2.0s duration per segment)
   - description: rich, detailed natural human language sentence describing the action
   - human_movement_state: state of movement ("MOVE", "GRASP", "HOLD", "RELEASE")
   - machine_state: state of machine ("IDLE", "ACTUATING")
