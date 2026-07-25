@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.env
+data/uploads/*
+!data/uploads/.gitkeep
+backend/data/uploads/*
+.pytest_cache/
+
+# Binary Model Weights & Video Clips (auto-downloaded at runtime)
+*.pt
+*.task
+weights/
+backend/weights/
+*.mp4
+*.avi
+*.mov
+node_modules/
+dist/

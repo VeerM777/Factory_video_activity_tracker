@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "status": "Generic starter vocabulary for zero-shot tool/part detection (YOLO-World). No fine-tuning or per-station labeled data required -- this is a versioned, editable text query list, not a trained model. Extend per station as needed without touching code.",
+  "changelog": [
+    {
+      "version": "0.1.0",
+      "note": "Initial abstract/compound phrases (e.g. 'housing part', 'small mechanical part'). Benchmarked against the real video at conf>=0.01: zero detections above threshold for every query."
+    },
+    {
+      "version": "0.2.0",
+      "note": "Replaced with simple, concrete single/two-word nouns after confirming YOLO-World matches these far better than compound factory-jargon phrases (e.g. 'glove' scored 0.47, 'box' 0.40, 'person' 0.93 on the same frame that scored 0 on every v0.1.0 query). Vocabulary describes what things LOOK like generically (glove, box, bottle-shaped tool) rather than what they're called in this specific factory (housing part, bush) -- station-specific meaning is applied later by the VLM/human, not by this detector."
+    }
+  ],
+  "object_queries": [
+    "person",
+    "hand",
+    "glove",
+    "box",
+    "bin",
+    "tray",
+    "bottle",
+    "pen",
+    "tool",
+    "screwdriver",
+    "wire",
+    "cloth",
+    "machine"
+  ]
+}

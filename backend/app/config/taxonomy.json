@@ -1,0 +1,71 @@
+{
+  "version": "1.0.1",
+  "source": "Seeded from ASSY WITH PRESS OPERATION.xlsx, Sheet 'VA SVA NVA Summary'. Editable by the industrial engineering team without any code change.",
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "note": "Initial import from example workbook."
+    },
+    {
+      "version": "1.0.1",
+      "note": "Fixed duplicate ref 48 (source workbook had both 'Refer WI's/reading drawing' (NVA) and 'Polishing material' (VA) as ref 48, so VLOOKUP always resolved to the NVA row). Ref 48 kept as-is for 'Refer WI's/reading drawing' (no behavior change vs. source). 'Polishing material' reassigned to ref 50. Flagged to the user during Phase 0; this was their chosen resolution."
+    }
+  ],
+  "entries": [
+    { "ref": 0,  "classification": "Noise", "description": "Noise" },
+
+    { "ref": 1,  "classification": "NVA", "description": "Walking" },
+    { "ref": 2,  "classification": "NVA", "description": "Tentative moves - part" },
+    { "ref": 3,  "classification": "NVA", "description": "Quality inspection" },
+    { "ref": 4,  "classification": "NVA", "description": "Pick/position/unload tool or any other material except part/fork lift movement" },
+    { "ref": 5,  "classification": "NVA", "description": "Tentative moves-tool" },
+    { "ref": 6,  "classification": "NVA", "description": "Process aide-tooling (fastening - rework)" },
+    { "ref": 7,  "classification": "NVA", "description": "Marking" },
+    { "ref": 8,  "classification": "NVA", "description": "Wiping/cleaning" },
+    { "ref": 9,  "classification": "NVA", "description": "Data entry" },
+    { "ref": 10, "classification": "NVA", "description": "Hammering (not use, use bend material)" },
+    { "ref": 11, "classification": "NVA", "description": "Bend below knee level, walk through door, walk on stairs" },
+    { "ref": 12, "classification": "NVA", "description": "Remove excess material" },
+    { "ref": 13, "classification": "NVA", "description": "Lay aside" },
+    { "ref": 14, "classification": "NVA", "description": "Machine auto (pallet movement time)" },
+    { "ref": 15, "classification": "NVA", "description": "Gauging/measuring" },
+    { "ref": 16, "classification": "NVA", "description": "Waiting" },
+    { "ref": 17, "classification": "NVA", "description": "Unpacking" },
+    { "ref": 18, "classification": "NVA", "description": "Press return movement" },
+    { "ref": 19, "classification": "NVA", "description": "Hoisting" },
+    { "ref": 20, "classification": "NVA", "description": "Searching" },
+    { "ref": 21, "classification": "NVA", "description": "Demasking" },
+    { "ref": 22, "classification": "NVA", "description": "Unfastening/disassembling/unloading" },
+    { "ref": 23, "classification": "NVA", "description": "Manual testing" },
+    { "ref": 48, "classification": "NVA", "description": "Refer WI's/reading drawing" },
+
+    { "ref": 24, "classification": "NVA-N", "description": "Locking" },
+    { "ref": 25, "classification": "NVA-N", "description": "Adjusting" },
+    { "ref": 26, "classification": "NVA-N", "description": "Disengage" },
+    { "ref": 27, "classification": "NVA-N", "description": "Auto testing/oven curing (mandatory quality inspection)" },
+
+    { "ref": 28, "classification": "SVA", "description": "Picking up part for assembly/machining" },
+    { "ref": 29, "classification": "SVA", "description": "Positioning part for assembly/machining" },
+    { "ref": 30, "classification": "SVA", "description": "Scanning" },
+    { "ref": 31, "classification": "SVA", "description": "Process confirmation / actuating machine controls" },
+    { "ref": 32, "classification": "SVA", "description": "Putting together parts for assembly/machining" },
+    { "ref": 33, "classification": "SVA", "description": "Holding part for assembly/machining" },
+
+    { "ref": 34, "classification": "VA", "description": "Fitting" },
+    { "ref": 35, "classification": "VA", "description": "Gluing" },
+    { "ref": 36, "classification": "VA", "description": "Machine auto time (process time)" },
+    { "ref": 37, "classification": "VA", "description": "Masking" },
+    { "ref": 38, "classification": "VA", "description": "Decals / stickers" },
+    { "ref": 39, "classification": "VA", "description": "Pre-treatment" },
+    { "ref": 40, "classification": "VA", "description": "Welding" },
+    { "ref": 41, "classification": "VA", "description": "Painting" },
+    { "ref": 42, "classification": "VA", "description": "Screwing/fastening" },
+    { "ref": 43, "classification": "VA", "description": "Bend the material" },
+    { "ref": 44, "classification": "VA", "description": "Cut the material" },
+    { "ref": 45, "classification": "VA", "description": "Make a hole" },
+    { "ref": 46, "classification": "VA", "description": "Product identification" },
+    { "ref": 47, "classification": "VA", "description": "Inserting" },
+    { "ref": 50, "classification": "VA", "description": "Polishing material", "legacy_ref": 48 },
+    { "ref": 49, "classification": "VA", "description": "Grinding material" }
+  ]
+}

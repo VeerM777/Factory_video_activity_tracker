@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/premraval010/Desktop/**)",
+      "Bash(python -c \"import openpyxl; print\\(openpyxl.__version__\\)\")",
+      "Bash(python3)",
+      "Bash(PYTHONIOENCODING=utf-8 python)",
+      "Bash(python -c \"import sys; print\\(sys.version\\)\")",
+      "Bash(pip show *)",
+      "Bash(mkdir -p backend/app/config backend/app/pipeline backend/app/models backend/app/services backend/tests data/templates data/ground_truth data/uploads scripts)",
+      "Bash(git init *)",
+      "Bash(cp \"C:\\\\Users\\\\premraval010\\\\Desktop\\\\ASSY WITH PRESS OPERATION.xlsx\" \"data/templates/most_analysis_template.xlsx\")",
+      "Bash(cp \"C:\\\\Users\\\\premraval010\\\\Desktop\\\\ASSY WITH PRESS OPERATION.xlsx\" \"data/ground_truth/ASSY_WITH_PRESS_OPERATION_ground_truth.xlsx\")",
+      "Bash(touch data/uploads/.gitkeep)",
+      "Bash(touch backend/app/__init__.py backend/app/config/__init__.py backend/app/pipeline/__init__.py backend/app/models/__init__.py backend/app/services/__init__.py backend/tests/__init__.py)",
+      "Bash(python -c ' *)",
+      "Bash(python -m pytest tests/test_stage6_tmu_engine.py -q)",
+      "Bash(find \"C:\\\\Users\\\\premraval010\\\\AppData\\\\Roaming\\\\Claude\\\\local-agent-mode-sessions\\\\skills-plugin\\\\eec68d5d-6f17-47a2-bd03-dbe9246d81b2\\\\b019a606-152b-453e-8ecc-45aadbccc22e\\\\skills\\\\xlsx\" -iname \"recalc.py\")",
+      "Bash(python scripts/_manual_verify_stage7.py)",
+      "Bash(python \"C:\\\\Users\\\\premraval010\\\\AppData\\\\Roaming\\\\Claude\\\\local-agent-mode-sessions\\\\skills-plugin\\\\eec68d5d-6f17-47a2-bd03-dbe9246d81b2\\\\b019a606-152b-453e-8ecc-45aadbccc22e\\\\skills\\\\xlsx\\\\scripts\\\\recalc.py\" \"C:\\\\Users\\\\PREMRA~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-premraval010-Desktop-Factory-Video-Analysis\\\\72ae13bb-373e-43e4-9204-b98d21e5f832\\\\scratchpad\\\\stage7_verify_output.xlsx\" 60)",
+      "Bash(where soffice *)",
+      "Read(//c/Program Files/LibreOffice/program/**)",
+      "Read(//c/Program Files \\\\\\(x86\\\\\\)/LibreOffice/program/**)",
+      "Bash(where ffmpeg *)",
+      "Bash(python -c \"import google.genai as genai; print\\(genai.__file__\\)\")",
+      "Bash(python -m pytest tests/ -q)",
+      "Bash(where gcloud *)",
+      "Bash(gcloud --version)",
+      "Bash(mkdir -p data/uploads/assy_press_run1)",
+      "Bash(python -)",
+      "Bash(python scripts/run_phase0.py --video 'C:\\\\Users\\\\premraval010\\\\Downloads\\\\Assy with Press Operation.mp4' --output ../data/uploads/assy_press_run1/output.xlsx --activity-description 'ASSY WITH PRESS OPERATION' --ground-truth ../data/ground_truth/ASSY_WITH_PRESS_OPERATION_ground_truth.xlsx)",
+      "Bash(mkdir -p data/uploads/assy_press_run1/frames)",
+      "Bash(python scripts/run_phase0.py --video 'C:\\\\Users\\\\premraval010\\\\Downloads\\\\Assy with Press Operation.mp4' --output ../data/uploads/assy_press_run1/output_v2.xlsx --activity-description 'ASSY WITH PRESS OPERATION' --ground-truth ../data/ground_truth/ASSY_WITH_PRESS_OPERATION_ground_truth.xlsx)",
+      "Bash(pip install *)"
+    ]
+  }
+}

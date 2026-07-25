@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+pydantic>=2
+openpyxl
+python-multipart
+google-genai
+google-cloud-aiplatform
+python-dotenv
+mediapipe
+transformers
+torch
+pytest

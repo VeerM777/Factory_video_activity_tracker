@@ -1,0 +1,103 @@
+{
+  "version": "0.1.0-unverified",
+  "status": "UNVERIFIED PLACEHOLDER. The index SCALE (0,1,3,6,10,16,24...) and the sequence-model parameter layouts below are reproduced from the example workbook (ASSY WITH PRESS OPERATION.xlsx) plus publicly taught MOST fundamentals. The per-parameter real-world cutoffs in 'guidance' (distance/weight/etc. ranges that determine which index applies) are NOT sourced from a licensed H.B. Maynard MOST manual and must not be treated as the official standard. Do not ship a production study on these cutoffs until the MOST license status is confirmed and the real index-range tables are substituted here -- no code changes required to swap them, only this file.",
+  "tmu_conversion_factor_sec_per_tmu": 0.036,
+  "tmu_formula": "For Data Card in {G, C, T}: TMU = SUM(active parameter index values in the row) * 10 * FREQ. For Data Card PT: TMU = FREQ * seconds_value / 0.036. This is pure arithmetic, verified against the cached values in the example workbook -- it is not a per-index lookup.",
+  "index_scale": [0, 1, 3, 6, 10, 16, 24, 32, 42, 58, 80, 100, 130, 160, 200, 250],
+  "sequence_models": {
+    "G": {
+      "name": "General Move",
+      "columns": ["F", "G", "H", "I", "J", "K", "L"],
+      "parameters": ["A", "B", "G", "A", "B", "P", "A"],
+      "parameter_labels": [
+        "Action Distance (get)",
+        "Body Motion (get)",
+        "Gain Control",
+        "Action Distance (put)",
+        "Body Motion (put)",
+        "Placement",
+        "Action Distance (return)"
+      ]
+    },
+    "C": {
+      "name": "Controlled Move",
+      "columns": ["F", "G", "H", "I", "J", "K", "L"],
+      "parameters": ["A", "B", "G", "M", "X", "I", "A"],
+      "parameter_labels": [
+        "Action Distance (get)",
+        "Body Motion (get)",
+        "Gain Control",
+        "Move Controlled",
+        "Process Time (controlled)",
+        "Alignment",
+        "Action Distance (return)"
+      ]
+    },
+    "T": {
+      "name": "Tool Use",
+      "columns": ["F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P"],
+      "parameters": ["A", "B", "G", "A", "B", "P", "T", "A", "B", "P", "A"],
+      "parameter_labels": [
+        "Action Distance (get tool)",
+        "Body Motion (get tool)",
+        "Gain Control",
+        "Action Distance (place tool)",
+        "Body Motion (place)",
+        "Placement",
+        "Tool Action",
+        "Action Distance (put away)",
+        "Body Motion (put away)",
+        "Placement (put away)",
+        "Action Distance (return)"
+      ]
+    },
+    "PT": {
+      "name": "Process Time",
+      "columns": ["F"],
+      "parameters": ["PT"],
+      "parameter_labels": ["Process Time (raw seconds, not an index)"]
+    }
+  },
+  "parameter_index_definitions": {
+    "A": {
+      "name": "Action Distance",
+      "allowed_indices": [0, 1, 3, 6, 10, 16],
+      "guidance_unverified": "0 = no movement; 1 = within reach, <=20cm; 3 = ~20-45cm (one step or arm extension); 6 = ~45-90cm (one step and reach); 10 = ~90-135cm (two steps); 16 = >135cm (walk)."
+    },
+    "B": {
+      "name": "Body Motion",
+      "allowed_indices": [0, 1, 3, 6, 10],
+      "guidance_unverified": "0 = no body motion; 1 = bend/sit/stand (partial); 3 = bend and arise, sit/stand; 6 = walk one or two steps to a new location; 10 = walk several steps / climb."
+    },
+    "G": {
+      "name": "Gain Control",
+      "allowed_indices": [0, 1, 3, 6],
+      "guidance_unverified": "0 = already controlled / no grasp needed; 1 = simple grasp of one light, easy-to-reach object; 3 = grasp requiring care, multiple objects, or blind grasp; 6 = grasp requiring search or awkward positioning."
+    },
+    "P": {
+      "name": "Placement",
+      "allowed_indices": [0, 1, 3, 6, 10, 16],
+      "guidance_unverified": "0 = toss/release with no care; 1 = obtain control at destination; 3 = adjust to fit/align loosely; 6 = careful adjustment/orientation; 10 = precise fit against resistance; 16 = highly precise, multiple adjustments."
+    },
+    "M": {
+      "name": "Move Controlled",
+      "allowed_indices": [0, 1, 3, 6, 10, 16],
+      "guidance_unverified": "Distance moved under control (e.g. sliding/pushing a part along a guided path). Same distance bands as Action Distance, applied to controlled travel rather than free reach."
+    },
+    "X": {
+      "name": "Process Time (within Controlled Move)",
+      "allowed_indices": [0, 1, 3, 6, 10, 16, 24, 32, 42, 58, 80, 100],
+      "guidance_unverified": "Index representing wait time embedded in a controlled move (e.g. machine engaging), on the standard index scale rather than raw seconds."
+    },
+    "I": {
+      "name": "Alignment",
+      "allowed_indices": [0, 1, 3, 6, 10],
+      "guidance_unverified": "0 = no alignment needed; 1 = light contact alignment; 3 = alignment requiring adjustment; 6 = precise alignment (fasteners, guide pins); 10 = very tight tolerance alignment."
+    },
+    "T": {
+      "name": "Tool Action",
+      "allowed_indices": [0, 1, 3, 6, 10, 16, 24, 32, 42, 58, 80, 100, 130, 160, 200, 250],
+      "guidance_unverified": "Index for the tool-use action itself (e.g. fasten, cut, press); scales with number of tool cycles/turns per the tool-use sub-table. Highly tool-specific -- flagged as the parameter most in need of the real licensed table."
+    }
+  }
+}
