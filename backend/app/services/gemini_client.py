@@ -69,29 +69,27 @@ class ClassificationResponse(BaseModel):
     classifications: list[ClassificationDraft]
 
 
-_SEGMENTATION_PROMPT = """You are assisting an industrial time-and-motion study. Watch this fixed-camera video of an operator performing a work cycle at a workstation.
+_SEGMENTATION_PROMPT = """You are assisting an industrial time-and-motion study. Watch this fixed-camera video of a workstation work cycle.
 
 CRITICAL MICRO-MOTION SEGMENTATION RULE:
-1. Do NOT combine multiple micro-actions (e.g. reaching, grasping, lifting, moving, positioning, pressing, releasing). Every single micro-motion lasting ~0.5 seconds to 1.5 seconds MUST be its own separate segment.
-2. A typical short work cycle (25-30 seconds) MUST produce roughly 18 to 28 distinct micro-activity segments.
-3. Align segment start and end timestamps strictly with physical activity transitions and the computer vision motion hints provided below.
+1. Segment ALL physical movements and actions occurring in the video, whether performed by a human operator, a robotic arm, a tool, or automated equipment.
+2. Do NOT combine multiple micro-actions (e.g. reaching, grasping, lifting, moving, positioning, pressing, releasing, robotic actuation). Every single distinct action lasting ~0.5 seconds to 2.0 seconds MUST be its own separate segment.
+3. You MUST produce a chronological list of micro-activity segments covering the entire duration of the video. Never return an empty list.
+4. Align segment start and end timestamps strictly with physical activity transitions.
 
 RICH NATURAL HUMAN LANGUAGE DESCRIPTION RULE:
 Every 'description' MUST be a detailed, rich natural human language sentence describing:
-- The actor ("An operator")
-- The specific hand/body movement ("reaching with right hand", "grasping with fingers", "lifting and moving", "positioning and seating into groove", "pressing trigger with thumb", "setting aside on rack")
-- The specific object or tool involved ("the green housing workpiece", "the press fixture tray", "the pneumatic adhesive dispenser")
-- The workstation location context ("from the lower component bin", "onto the press base plate")
+- The actor ("An operator", "A robotic arm", "The automated press mechanism")
+- The specific movement ("reaching with end-effector", "grasping component", "lifting and moving", "positioning into press fixture", "actuating press cycle", "releasing and setting aside")
+- The specific object or tool involved ("the workpiece", "the battery module frame", "the press fixture", "the pneumatic gripper")
+- The workstation location context ("from the intake conveyor", "onto the assembly plate")
 
-EXAMPLES OF RICH MICRO-MOTION DESCRIPTIONS (strictly segmented on every micro-transition):
-  "An operator reaching with right hand toward the lower component bin" (human_movement_state: MOVE, machine_state: IDLE)
-  "An operator grasping the green housing workpiece from the bin with fingers" (human_movement_state: GRASP, machine_state: IDLE)
-  "An operator lifting and moving the green workpiece toward the press fixture" (human_movement_state: MOVE, machine_state: IDLE)
-  "An operator positioning the green workpiece onto the fixture base plate" (human_movement_state: MOVE, machine_state: IDLE)
-  "An operator holding the workpiece steady in the fixture with left hand" (human_movement_state: HOLD, machine_state: IDLE)
-  "An operator reaching with right hand to grasp the pneumatic adhesive dispenser tool" (human_movement_state: GRASP, machine_state: IDLE)
-  "An operator applying adhesive glue onto the workpiece seam using the dispenser tool" (human_movement_state: MOVE, machine_state: ACTUATING)
-  "An operator laying aside the dispensing tool onto the workstation rack" (human_movement_state: RELEASE, machine_state: IDLE)
+EXAMPLES OF RICH MICRO-MOTION DESCRIPTIONS:
+  "A robotic arm reaching toward the battery module tray on the conveyor" (human_movement_state: MOVE, machine_state: IDLE)
+  "A robotic arm grasping the battery module frame with pneumatic grippers" (human_movement_state: GRASP, machine_state: IDLE)
+  "A robotic arm lifting and transferring the battery module toward the assembly station" (human_movement_state: MOVE, machine_state: IDLE)
+  "An automated press actuating downward onto the battery module fixture" (human_movement_state: HOLD, machine_state: ACTUATING)
+  "A robotic arm releasing the assembled module and returning to home position" (human_movement_state: RELEASE, machine_state: IDLE)
 
 For each micro-activity segment, output:
   - t_start_sec, t_end_sec: exact micro-boundary timestamps in seconds

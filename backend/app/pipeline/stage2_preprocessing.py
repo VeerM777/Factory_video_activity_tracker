@@ -34,7 +34,7 @@ def blur_faces(input_path: Path, output_path: Path, blur_ksize: int = 65) -> Pat
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     writer = cv2.VideoWriter(str(output_path), fourcc, fps, (width, height))
 
-    cascade = cv2.CascadeClassifier(_FACE_CASCADE_PATH)
+    cascade = cv2.CascadeClassifier(_FACE_CASCADE_PATH) if Path(_FACE_CASCADE_PATH).exists() else None
 
     try:
         mp_solutions = getattr(mp, "solutions", None)
