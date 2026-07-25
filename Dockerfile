@@ -3,9 +3,8 @@
 # Stage 1: Build React Frontend
 FROM node:20-slim AS frontend-builder
 WORKDIR /app/frontend
-COPY frontend/package*.json ./
-RUN npm install --no-audit
 COPY frontend/ ./
+RUN npm install --no-audit
 RUN npm run build
 
 # Stage 2: Python Backend + Production Container
