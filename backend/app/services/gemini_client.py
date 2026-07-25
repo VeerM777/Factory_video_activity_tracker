@@ -287,9 +287,9 @@ class GeminiClient:
                         if match:
                             wait_sec = min(60.0, float(match.group(1)) + 2.0)
                         time.sleep(wait_sec)
-                    else:
-                        time.sleep(3.0)
-        raise last_exc
+        if last_exc is not None:
+            raise last_exc
+        raise RuntimeError("Failed to generate content after retries")
 
     def segment_video(
         self,
