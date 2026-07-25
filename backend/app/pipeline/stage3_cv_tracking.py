@@ -126,11 +126,14 @@ class CVTracker:
         else:
             print("ℹ️ [CPU MODE] Stage 3 CVTracker running on CPU.")
 
-        from ultralytics import YOLO
-
-        self._object_detector = YOLO(OBJECT_DETECTION_MODEL)
-        self._object_queries = load_cv_vocabulary().object_queries
-        self._object_detector.set_classes(self._object_queries)
+        try:
+            from ultralytics import YOLO
+            self._object_detector = YOLO(OBJECT_DETECTION_MODEL)
+            self._object_queries = load_cv_vocabulary().object_queries
+            self._object_detector.set_classes(self._object_queries)
+        except Exception as e:
+            print(f"⚠️ [YOLO Warning] Could not load YOLO-World ({e}), using MediaPipe & motion-differencing tracking.")
+            self._object_detector = None
 
     def _sample_frames(self, video_path: Path):
         cap = cv2.VideoCapture(str(video_path))
@@ -164,6 +167,8 @@ class CVTracker:
         return positions
 
     def _detect_objects(self, frame_bgr: np.ndarray) -> list[dict]:
+        if self._object_detector is None:
+            return []
         import torch
         device = 0 if torch.cuda.is_available() else "cpu"
         result = self._object_detector.predict(frame_bgr, device=device, verbose=False)[0]
