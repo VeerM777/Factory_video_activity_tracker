@@ -476,3 +476,11 @@ async def submit_human_review(job_id: str, review: ReviewSubmission):
 
     return {"status": "SUCCESS", "updated_row": updated_row.model_dump()}
 
+
+# Serve built React frontend static files in production (Railway / Docker)
+from fastapi.staticfiles import StaticFiles
+
+FRONTEND_DIST = ROOT_DIR / "frontend" / "dist"
+if FRONTEND_DIST.exists():
+    app.mount("/", StaticFiles(directory=str(FRONTEND_DIST), html=True), name="static")
+
