@@ -120,11 +120,26 @@ class CVTracker:
             )
         )
 
-        from ultralytics import YOLO
+        import os
+        import torch
 
-        self._object_detector = YOLO(OBJECT_DETECTION_MODEL)
-        self._object_queries = load_cv_vocabulary().object_queries
-        self._object_detector.set_classes(self._object_queries)
+        # On CPU-only cloud environments (Railway), loading YOLO-World + CLIP consumes >1.2GB RAM
+        # and triggers OOM crashes. Use MediaPipe + motion-differencing on CPU, use YOLO when GPU is present.
+        enable_yolo = torch.cuda.is_available() or os.environ.get("ENABLE_YOLO", "false").lower() in ("true", "1")
+
+        if enable_yolo:
+            try:
+                from ultralytics import YOLO
+                self._object_detector = YOLO(OBJECT_DETECTION_MODEL)
+                self._object_queries = load_cv_vocabulary().object_queries
+                self._object_detector.set_classes(self._object_queries)
+                print(f"🚀 [YOLO ACTIVE] Loaded {OBJECT_DETECTION_MODEL} for object detection.")
+            except Exception as e:
+                print(f"⚠️ [YOLO Warning] Could not load YOLO ({e}), using MediaPipe & motion-differencing tracking.")
+                self._object_detector = None
+        else:
+            print("ℹ️ [LIGHTWEIGHT CPU MODE] Skipping heavy YOLO model to keep RAM footprint under 200MB.")
+            self._object_detector = None
 
     def _sample_frames(self, video_path: Path):
         cap = cv2.VideoCapture(str(video_path))
