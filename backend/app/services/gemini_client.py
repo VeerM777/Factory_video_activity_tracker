@@ -71,31 +71,31 @@ class ClassificationResponse(BaseModel):
 
 _SEGMENTATION_PROMPT = """You are assisting an industrial time-and-motion study. Watch this fixed-camera video of a workstation work cycle.
 
-CRITICAL MICRO-MOTION SEGMENTATION RULE:
-1. Segment ALL physical movements and actions occurring in the video, whether performed by a human operator, a robotic arm, a tool, or automated equipment.
-2. Do NOT combine multiple micro-actions (e.g. reaching, grasping, lowering, positioning, pressing, releasing, retracting, returning). Every single micro-motion MUST last strictly between 1.0 second and 2.0 seconds maximum. NEVER output segments longer than 2.0 seconds.
-3. For a 15-second video, you MUST produce roughly 8 to 10 distinct micro-activity segments (e.g. ~1.5s to 2.0s per segment).
-4. Align segment start and end timestamps strictly with physical activity transitions.
+CRITICAL DYNAMIC MOTION BOUNDARY RULE:
+1. Detect NATURAL, DYNAMIC physical activity boundaries directly from the video. Do NOT force uniform or fixed time intervals (like 2.0s or 3.0s). Each elemental motion starts at the exact second when the physical movement begins and ends when that specific action completes (e.g. 0.0s-0.6s, 0.6s-1.8s, 1.8s-2.3s, 2.3s-3.7s).
+2. Segment ALL physical movements and micro-actions occurring in the video, whether performed by a human operator, a robotic arm, a tool, or automated equipment.
+3. Do NOT combine multiple distinct micro-actions (e.g. reaching, grasping, positioning, pressing, releasing). Break every distinct physical transition into its own segment based on natural motion start/stop cues.
+4. Align segment start and end timestamps strictly with observed physical activity state changes in the video.
 
 RICH NATURAL HUMAN LANGUAGE DESCRIPTION RULE:
 Every 'description' MUST be a detailed, rich natural human language sentence describing:
 - The actor ("An operator", "Robotic arms", "The automated press mechanism")
-- The specific movement ("reaching with pneumatic grippers", "grasping component", "lowering and positioning", "pressing and securing", "releasing and retracting", "returning to standby")
-- The specific object or tool involved ("the workpiece", "the battery module frame", "the press fixture", "the pneumatic gripper")
-- The workstation location context ("from the intake conveyor", "into the battery pack housing")
+- The specific movement ("reaching with right hand", "grasping component", "lowering and positioning", "driving screw with electric driver", "releasing and retracting", "returning to neutral ready position")
+- The specific object or tool involved ("the workpiece", "the green housing", "the electric screwdriver tool", "the fixture tray")
+- The workstation location context ("from the component bin", "into the assembly jig")
 
-EXAMPLES OF RICH MICRO-MOTION DESCRIPTIONS (8-segment micro-breakdown for a 15s clip):
-  "Robotic arms positioning battery modules over the automated guided vehicle" (t_start_sec: 0.0, t_end_sec: 1.5)
-  "Robotic arms lowering battery modules down toward the battery pack housing" (t_start_sec: 1.5, t_end_sec: 3.5)
-  "Robotic arms placing battery modules firmly into the compartments of the tray" (t_start_sec: 3.5, t_end_sec: 5.5)
-  "Robotic arms releasing battery modules inside the tray and beginning to retract" (t_start_sec: 5.5, t_end_sec: 7.5)
-  "Robotic arms raising away from the installed battery modules in the tray" (t_start_sec: 7.5, t_end_sec: 9.5)
-  "Robotic arms shifting sideways and hovering over the adjacent component bin" (t_start_sec: 9.5, t_end_sec: 11.5)
-  "Robotic arms lowering down to secure additional components onto the battery tray" (t_start_sec: 11.5, t_end_sec: 13.5)
-  "Robotic arms lifting up and returning to their default standby positions above table" (t_start_sec: 13.5, t_end_sec: 15.0)
+EXAMPLES OF DYNAMIC NATURAL BOUNDARY BREAKDOWNS (varies naturally based on actual movement duration):
+  "An operator reaching with right hand toward the component bin" (t_start_sec: 0.0, t_end_sec: 0.7)
+  "An operator grasping the green housing workpiece from the bin" (t_start_sec: 0.7, t_end_sec: 1.4)
+  "An operator lifting and moving the green workpiece toward the assembly jig" (t_start_sec: 1.4, t_end_sec: 2.8)
+  "An operator aligning and seating the workpiece into the fixture base plate" (t_start_sec: 2.8, t_end_sec: 4.1)
+  "An operator reaching to grasp the electric screwdriver tool suspended above" (t_start_sec: 4.1, t_end_sec: 4.9)
+  "An operator positioning the driver bit onto the screw head" (t_start_sec: 4.9, t_end_sec: 5.6)
+  "An operator driving a screw into the green housing using the tool" (t_start_sec: 5.6, t_end_sec: 7.3)
+  "An operator setting aside the tool and returning hands to neutral position" (t_start_sec: 7.3, t_end_sec: 8.2)
 
 For each micro-activity segment, output:
-  - t_start_sec, t_end_sec: exact micro-boundary timestamps in seconds (max 2.0s duration per segment)
+  - t_start_sec, t_end_sec: exact natural physical boundary timestamps in seconds (dynamic real numbers like 0.6, 1.4, 2.8)
   - description: rich, detailed natural human language sentence describing the action
   - human_movement_state: state of movement ("MOVE", "GRASP", "HOLD", "RELEASE")
   - machine_state: state of machine ("IDLE", "ACTUATING")
