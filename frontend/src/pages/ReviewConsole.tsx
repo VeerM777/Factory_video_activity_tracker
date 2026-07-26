@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { TopBar } from "../components/TopBar";
 import { PhaseProgress } from "../components/PhaseProgress";
@@ -14,6 +14,7 @@ const TERMINAL = new Set(["COMPLETED", "FAILED"]);
 
 export function ReviewConsole() {
   const { jobId } = useParams<{ jobId: string }>();
+  const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -23,19 +24,23 @@ export function ReviewConsole() {
     queryKey: ["status", jobId],
     queryFn: () => getJobStatus(jobId!),
     enabled: !!jobId,
-    refetchInterval: (query) => (query.state.data && TERMINAL.has(query.state.data.status) ? false : 2000),
-    // A multi-minute analysis shouldn't freeze its status just because the
-    // engineer switched tabs -- keep polling while backgrounded.
+    refetchInterval: (query) => {
+      if (query.state.status === "error" || (query.state.data && TERMINAL.has(query.state.data.status))) {
+        return false;
+      }
+      return 2000;
+    },
     refetchIntervalInBackground: true,
   });
 
   const isDone = statusQuery.data?.status === "COMPLETED";
+  const isFailed = statusQuery.data?.status === "FAILED";
 
   const rowsQuery = useQuery({
     queryKey: ["rows", jobId],
     queryFn: () => getJobRows(jobId!),
-    enabled: !!jobId,
-    refetchInterval: isDone ? false : 2000,
+    enabled: !!jobId && !isFailed,
+    refetchInterval: isDone || isFailed ? false : 2000,
     refetchIntervalInBackground: true,
   });
 
@@ -79,7 +84,7 @@ export function ReviewConsole() {
   if (!jobId) return null;
 
   const phase = statusQuery.data?.phase ?? "QUEUED";
-  const generating = !isDone;
+  const generating = !isDone && !isFailed;
   const stationNo = rows[0]?.station_no;
   const activityNo = rows[0]?.activity_no;
 
@@ -96,17 +101,58 @@ export function ReviewConsole() {
               {activityNo && <span>· activity {activityNo}</span>}
             </div>
           </div>
-          {isDone && (
-            <a
-              href={excelDownloadUrl(jobId)}
-              className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-ink no-underline"
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              className="rounded-md border border-line-strong bg-raised px-3.5 py-2 text-xs font-semibold text-ink hover:border-accent hover:text-accent"
             >
-              Download workbook (.xlsx)
-            </a>
-          )}
+              ← Back to Upload
+            </button>
+            {isDone && (
+              <a
+                href={excelDownloadUrl(jobId)}
+                className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-ink no-underline"
+              >
+                Download workbook (.xlsx)
+              </a>
+            )}
+          </div>
         </div>
 
-        {!isDone && (
+        {statusQuery.isError && (
+          <div className="mb-8 rounded-md border border-nva bg-nva-soft p-5 text-nva">
+            <div className="font-semibold text-base mb-1">Job Not Found or Connection Lost</div>
+            <div className="text-sm opacity-90 mb-4">
+              {(statusQuery.error as Error)?.message || "Unable to retrieve job status from backend server."}
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              className="rounded bg-nva px-4 py-2 text-xs font-bold text-white hover:opacity-90"
+            >
+              Start New Analysis
+            </button>
+          </div>
+        )}
+
+        {isFailed && (
+          <div className="mb-8 rounded-md border border-nva bg-nva-soft p-5 text-nva">
+            <div className="font-semibold text-base mb-1">Analysis Failed</div>
+            <div className="text-sm opacity-90 mb-4">
+              {statusQuery.data?.error || "An error occurred during video analysis execution."}
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              className="rounded bg-nva px-4 py-2 text-xs font-bold text-white hover:opacity-90"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+
+        {!isDone && !isFailed && !statusQuery.isError && (
           <div className="mb-8 rounded-md border border-line bg-raised p-5">
             <PhaseProgress phase={phase} />
           </div>
@@ -150,3 +196,4 @@ export function ReviewConsole() {
     </div>
   );
 }
+

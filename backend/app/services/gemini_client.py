@@ -282,14 +282,11 @@ class GeminiClient:
                         # Model ID not available in this region/version, try next model candidate
                         break
                     if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "quota" in err_str.lower():
-                        wait_sec = 10.0 * (1.5 ** attempt)
-                        match = re.search(r"retry in (\d+(?:\.\d+)?)s", err_str, re.IGNORECASE)
-                        if match:
-                            wait_sec = min(60.0, float(match.group(1)) + 2.0)
+                        wait_sec = 2.0
                         time.sleep(wait_sec)
-        if last_exc is not None:
-            raise last_exc
-        raise RuntimeError("Failed to generate content after retries")
+                    else:
+                        time.sleep(1.0)
+        raise last_exc
 
     def segment_video(
         self,
@@ -332,7 +329,6 @@ class GeminiClient:
             for i, s in enumerate(segments)
         )
         contents = [
-            self._video_part(video, mime_type),
             _classification_prompt(most_tables, taxonomy),
             f"\nSegments:\n{segment_listing}",
         ]

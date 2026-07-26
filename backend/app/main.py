@@ -16,6 +16,7 @@ from fastapi import FastAPI, BackgroundTasks, UploadFile, File, HTTPException, R
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
+from fastapi.middleware.cors import CORSMiddleware
 from app.models.schemas import Classification, MostRow, ReviewFlag, Segment
 from app.pipeline.stage8_human_review import HumanReviewEngine
 from app.pipeline.stage7_excel_writer import write_most_analysis_workbook
@@ -32,6 +33,14 @@ app = FastAPI(
     version="1.0.0",
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 ROOT_DIR = Path(__file__).parent.parent.parent
 UPLOAD_DIR = ROOT_DIR / "data" / "uploads"
 TEMPLATE_PATH = ROOT_DIR / "data" / "templates" / "most_analysis_template.xlsx"
@@ -40,8 +49,83 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 MANUAL_SEC_PER_MOTION = 180
 
-# In-memory job store for Phase 0/1 (pluggable to DB in cloud deployment)
+# In-memory job store with disk-backed JSON persistence
 JOBS: Dict[str, Dict[str, Any]] = {}
+JOBS_DB_PATH = UPLOAD_DIR / "jobs_db.json"
+
+
+def _save_jobs_to_disk() -> None:
+    """Persist jobs state and rows to disk so data survives server restarts."""
+    try:
+        data = {}
+        for j_id, job in JOBS.items():
+            engine: HumanReviewEngine | None = job.get("review_engine")
+            rows = engine.get_finalized_rows() if engine else job.get("rows", [])
+            segments = job.get("segments", [])
+            flags = engine.get_pending_flags() if engine else job.get("flags", [])
+
+            data[j_id] = {
+                "status": job.get("status"),
+                "phase": job.get("phase"),
+                "raw_video_path": str(job.get("raw_video_path")) if job.get("raw_video_path") else None,
+                "output_excel_path": str(job.get("output_excel_path")) if job.get("output_excel_path") else None,
+                "activity_description": job.get("activity_description", ""),
+                "station_no": job.get("station_no", ""),
+                "activity_no": job.get("activity_no", ""),
+                "error": job.get("error"),
+                "elapsed_sec": job.get("elapsed_sec"),
+                "estimated_manual_sec": job.get("estimated_manual_sec"),
+                "rows": [r.model_dump() for r in rows],
+                "segments": [s.model_dump() for s in segments],
+                "flags": [f.model_dump() for f in flags],
+            }
+
+        tmp_path = JOBS_DB_PATH.with_suffix(".tmp")
+        tmp_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        tmp_path.replace(JOBS_DB_PATH)
+    except Exception as e:
+        print(f"Warning: Failed to persist jobs to disk: {e}")
+
+
+def _load_jobs_from_disk() -> None:
+    """Load persisted jobs from disk into JOBS dictionary on startup."""
+    if not JOBS_DB_PATH.exists():
+        return
+    try:
+        data = json.loads(JOBS_DB_PATH.read_text(encoding="utf-8"))
+        for j_id, item in data.items():
+            raw_video = Path(item["raw_video_path"]) if item.get("raw_video_path") else None
+            excel_path = Path(item["output_excel_path"]) if item.get("output_excel_path") else None
+
+            rows = [MostRow(**r) for r in item.get("rows", [])]
+            segments = [Segment(**s) for s in item.get("segments", [])]
+            flags = [ReviewFlag(**f) for f in item.get("flags", [])]
+
+            engine = HumanReviewEngine(rows, segments, flags) if (rows or segments or flags) else None
+
+            JOBS[j_id] = {
+                "status": item.get("status", "COMPLETED"),
+                "phase": item.get("phase", "COMPLETED"),
+                "raw_video_path": raw_video,
+                "output_excel_path": excel_path,
+                "activity_description": item.get("activity_description", ""),
+                "station_no": item.get("station_no", ""),
+                "activity_no": item.get("activity_no", ""),
+                "error": item.get("error"),
+                "elapsed_sec": item.get("elapsed_sec", 30.0),
+                "estimated_manual_sec": item.get("estimated_manual_sec"),
+                "rows": rows,
+                "segments": segments,
+                "flags": flags,
+                "review_engine": engine,
+                "excel_path": excel_path,
+            }
+    except Exception as e:
+        print(f"Warning: Failed to load jobs from disk: {e}")
+
+
+_load_jobs_from_disk()
+
 
 
 class JobStatusResponse(BaseModel):
@@ -83,6 +167,7 @@ def _create_job(
         "station_no": station_no,
         "activity_no": activity_no,
     }
+    _save_jobs_to_disk()
 
     background_tasks.add_task(
         _process_video_job,
@@ -107,38 +192,41 @@ def _process_video_job(
     try:
         JOBS[job_id]["status"] = "PROCESSING"
         JOBS[job_id]["started_at"] = time.monotonic()
+        _save_jobs_to_disk()
 
         # 1. Mandatory face blur pass
         JOBS[job_id]["phase"] = "PREPROCESSING"
+        _save_jobs_to_disk()
         blurred_path = UPLOAD_DIR / f"_blurred_{raw_video_path.name}"
         blur_faces(raw_video_path, blurred_path)
 
         # 2. Stage 3: CV tracking — produces objective hand-state timing events
-        # that anchor Stage 4 segment boundaries to real measured transitions.
-        # This matches the original CLI (run_phase0.py) which always ran CVTracker.
-        # Without this, Gemini works blind, uses more tokens, fails more, exhausts quota faster.
         JOBS[job_id]["phase"] = "PREPROCESSING"
         try:
-            tracker = CVTracker(sample_fps=4.0)
+            tracker = CVTracker(sample_fps=2.0)
             motion_events = tracker.build_motion_event_stream(blurred_path)
         except Exception:
             motion_events = None  # non-fatal: Stage 4 degrades gracefully without events
 
         # 3. Gemini Client & upload
         JOBS[job_id]["phase"] = "UPLOADING"
+        _save_jobs_to_disk()
         client = GeminiClient()
         uploaded_video = client.upload_video(blurred_path)
 
-        # 4. VLM Segmentation — now receives motion_events just like run_phase0.py
+        # 4. VLM Segmentation
         JOBS[job_id]["phase"] = "SEGMENTING"
+        _save_jobs_to_disk()
         segments = segment_video(client, uploaded_video, str(raw_video_path), motion_events=motion_events)
 
         # 4. Structured Classification
         JOBS[job_id]["phase"] = "CLASSIFYING"
+        _save_jobs_to_disk()
         classifications, review_flags = classify_segments(client, uploaded_video, segments)
 
         # 5. Deterministic TMU Engine
         JOBS[job_id]["phase"] = "FINALIZING"
+        _save_jobs_to_disk()
         rows: list[MostRow] = []
         for i, seg in enumerate(segments):
             cls = classifications.get(seg.segment_id)
@@ -163,13 +251,13 @@ def _process_video_job(
         JOBS[job_id]["flags"] = review_flags
         JOBS[job_id]["review_engine"] = engine
         JOBS[job_id]["excel_path"] = output_excel_path
+        _save_jobs_to_disk()
     except Exception as e:
-        import traceback
-        print(f"\n[ERROR in Job {job_id}]: {e}")
-        traceback.print_exc()
         JOBS[job_id]["status"] = "FAILED"
         JOBS[job_id]["phase"] = "FAILED"
         JOBS[job_id]["error"] = str(e)
+        _save_jobs_to_disk()
+
 
 
 @app.post("/api/v1/analyze", response_model=JobStatusResponse)
@@ -307,6 +395,7 @@ async def analyze_demo_video(
         "review_engine": engine,
         "excel_path": output_excel_path,
     }
+    _save_jobs_to_disk()
 
     return JobStatusResponse(
         job_id=job_id,
@@ -473,14 +562,22 @@ async def submit_human_review(job_id: str, review: ReviewSubmission):
         job["excel_path"],
         job["activity_description"],
     )
+    _save_jobs_to_disk()
 
     return {"status": "SUCCESS", "updated_row": updated_row.model_dump()}
 
 
-# Serve built React frontend static files in production (Railway / Docker)
+# Serve Production Frontend (if built)
 from fastapi.staticfiles import StaticFiles
+frontend_dist = ROOT_DIR / "frontend" / "dist"
+if frontend_dist.exists():
+    app.mount("/assets", StaticFiles(directory=frontend_dist / "assets"), name="assets")
 
-FRONTEND_DIST = ROOT_DIR / "frontend" / "dist"
-if FRONTEND_DIST.exists():
-    app.mount("/", StaticFiles(directory=str(FRONTEND_DIST), html=True), name="static")
-
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404)
+        file_path = frontend_dist / full_path
+        if file_path.is_file():
+            return FileResponse(file_path)
+        return FileResponse(frontend_dist / "index.html")

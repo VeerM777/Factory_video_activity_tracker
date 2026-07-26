@@ -120,20 +120,11 @@ class CVTracker:
             )
         )
 
-        import torch
-        if torch.cuda.is_available():
-            print(f"🚀 [GPU ACCELERATION ACTIVE] Stage 3 CVTracker running on {torch.cuda.get_device_name(0)} (device: cuda:0)")
-        else:
-            print("ℹ️ [CPU MODE] Stage 3 CVTracker running on CPU.")
+        from ultralytics import YOLO
 
-        try:
-            from ultralytics import YOLO
-            self._object_detector = YOLO(OBJECT_DETECTION_MODEL)
-            self._object_queries = load_cv_vocabulary().object_queries
-            self._object_detector.set_classes(self._object_queries)
-        except Exception as e:
-            print(f"⚠️ [YOLO Warning] Could not load YOLO-World ({e}), using MediaPipe & motion-differencing tracking.")
-            self._object_detector = None
+        self._object_detector = YOLO(OBJECT_DETECTION_MODEL)
+        self._object_queries = load_cv_vocabulary().object_queries
+        self._object_detector.set_classes(self._object_queries)
 
     def _sample_frames(self, video_path: Path):
         cap = cv2.VideoCapture(str(video_path))
@@ -148,6 +139,11 @@ class CVTracker:
             ok, frame = cap.read()
             if not ok:
                 break
+            # Downscale high-resolution frames to 640px for fast CV inference
+            h, w = frame.shape[:2]
+            if w > 640:
+                target_h = max(2, int(h * (640.0 / w)))
+                frame = cv2.resize(frame, (640, target_h), interpolation=cv2.INTER_NEAREST)
             yield t, frame
             t += step
         cap.release()
@@ -167,11 +163,7 @@ class CVTracker:
         return positions
 
     def _detect_objects(self, frame_bgr: np.ndarray) -> list[dict]:
-        if self._object_detector is None:
-            return []
-        import torch
-        device = 0 if torch.cuda.is_available() else "cpu"
-        result = self._object_detector.predict(frame_bgr, device=device, verbose=False)[0]
+        result = self._object_detector.predict(frame_bgr, verbose=False)[0]
         detections = []
         for box in result.boxes:
             score = float(box.conf[0])
@@ -221,13 +213,20 @@ class CVTracker:
         prev_gray = None
         prev_t = None
 
+        sample_idx = 0
+        cached_objects: list[dict] = []
+
         for t, frame in self._sample_frames(video_path):
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
             hand_positions = self._detect_hands(rgb)
-            objects = self._detect_objects(frame)
+            # Run heavy YOLO object detector every 3rd sample (~1.5s), reusing cached boxes
+            if sample_idx % 3 == 0:
+                cached_objects = self._detect_objects(frame)
+            objects = cached_objects
             machine_state = self._machine_state(prev_gray, gray)
+            sample_idx += 1
 
             for hand_label, state in hand_states.items():
                 pos = hand_positions.get(hand_label)
