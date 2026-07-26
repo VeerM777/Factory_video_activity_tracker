@@ -5,6 +5,7 @@ job status tracking, human review flag clearance, and Excel report downloading.
 """
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import time

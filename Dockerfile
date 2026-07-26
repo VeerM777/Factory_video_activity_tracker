@@ -27,6 +27,8 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender-dev \
     libxcb1 \
+    git \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
